@@ -4,6 +4,7 @@ import dev.bogdanbalalau.chatapp.dto.FriendRequestDTO;
 import dev.bogdanbalalau.chatapp.entity.FriendRequest;
 import dev.bogdanbalalau.chatapp.entity.RequestStatus;
 import dev.bogdanbalalau.chatapp.entity.User;
+import dev.bogdanbalalau.chatapp.exception.AlreadyFriendsException;
 import dev.bogdanbalalau.chatapp.exception.FriendRequestAlreadySentException;
 import dev.bogdanbalalau.chatapp.exception.FriendRequestNotFoundException;
 import dev.bogdanbalalau.chatapp.exception.UserNotFoundException;
@@ -12,6 +13,7 @@ import dev.bogdanbalalau.chatapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,14 +28,20 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     }
 
     @Override
-    public String sendFriendRequest(String senderUsername, String receiverUsername) throws UserNotFoundException, FriendRequestAlreadySentException {
+    public String sendFriendRequest(String senderUsername, String receiverUsername) throws UserNotFoundException, FriendRequestAlreadySentException, AlreadyFriendsException {
         User sender = userRepository.findByUsername(senderUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found!"));
         User receiver = userRepository.findByUsername(receiverUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found!"));
 
-        if (friendRequestRepository.findBySenderAndReceiver(sender, receiver).isPresent()) {
-            throw new FriendRequestAlreadySentException("Friend request already sent!");
+        Optional<FriendRequest> dbFriendRequest = friendRequestRepository.findLastBySenderAndReceiver(sender, receiver);
+
+        if (dbFriendRequest.isPresent()) {
+            if (dbFriendRequest.get().getStatus() == RequestStatus.PENDING) {
+                throw new FriendRequestAlreadySentException("Friend request already sent!");
+            } else if (dbFriendRequest.get().getStatus() == RequestStatus.ACCEPTED) {
+                throw new AlreadyFriendsException("Already friends!");
+            }
         }
 
         FriendRequest friendRequest = new FriendRequest();

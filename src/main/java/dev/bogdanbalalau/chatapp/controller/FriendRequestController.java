@@ -1,5 +1,6 @@
 package dev.bogdanbalalau.chatapp.controller;
 
+import dev.bogdanbalalau.chatapp.exception.AlreadyFriendsException;
 import dev.bogdanbalalau.chatapp.exception.FriendRequestAlreadySentException;
 import dev.bogdanbalalau.chatapp.exception.FriendRequestNotFoundException;
 import dev.bogdanbalalau.chatapp.exception.UserNotFoundException;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/friends")
+@CrossOrigin
 public class FriendRequestController {
     private final FriendRequestService friendRequestService;
 
@@ -30,7 +32,7 @@ public class FriendRequestController {
                     .data(null)
                     .build();
             return ResponseEntity.ok(response);
-        } catch (UserNotFoundException | FriendRequestAlreadySentException e) {
+        } catch (UserNotFoundException | FriendRequestAlreadySentException | AlreadyFriendsException e) {
             System.out.println(e.getMessage());
 
             ApiResponse response = ApiResponse.builder()
